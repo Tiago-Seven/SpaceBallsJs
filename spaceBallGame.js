@@ -10,6 +10,7 @@ let page = 0;
 let n = 1;
 let maxspeed = 10;
 let maxForce = 0.5;
+let debug = false;
 
 function setup() {
   setupBalls();
@@ -17,52 +18,51 @@ function setup() {
 
 function setupBalls() {
   createCanvas(window.innerWidth, window.innerHeight);
-  ResetGame();
+  resetGame();
   nome = createDiv("Tiago Costa Neves MIEIC");
   nome.position(2, height - 31);
   nome.style("color", "#6f6f6f");
   nome.style("font-size", "15pt");
-  var reset = createButton("Try again");
+  let reset = createButton("Try again");
   reset.position(0, 0);
-  reset.mousePressed(ResetGame);
+  reset.mousePressed(resetGame);
   page = 1;
 }
 
 function draw() {
+  // background(0);
+  // balls[0].pos.x = width / 2;
+  // balls[0].pos.y = height / 2;
+  // balls[0].v.x = 0;
+  // balls[0].v.y = 1;
+  // balls[0].show(createVector(0,0));
   time++;
   background(0);
   if (!hit) {
-    for (var i = 0; i < balls.length; i++) {
-      var mouseV = createVector(mouseX, mouseY);
-      var bPos = balls[i].pos;
-      var desired = createVector(mouseV.x - bPos.x, mouseV.y - bPos.y); //target - pos atual
-      desired.setMag(maxspeed)
-      var steering = createVector(desired.x - balls[i].v.x, desired.y - balls[i].v.y) // desired velocity-actual velocity
+    for (let ball of balls) {
+      let bPos = ball.pos;
+      let desired = createVector(mouseX - bPos.x, mouseY - bPos.y); //target - pos atual
+      desired.setMag(maxspeed);
+      let steering = createVector(desired.x - ball.v.x, desired.y - ball.v.y); // desired velocity-actual velocity
       steering.limit(maxForce);
-      balls[i].addForce(steering);
-      balls[i].update();
-      balls[i].show();
-      if (dist(balls[i].pos.x, balls[i].pos.y, mouseX, mouseY) < 10)
-        hit = true;
+      ball.addForce(steering);
+      ball.update();
+      ball.show(steering);
+      if (dist(bPos.x, bPos.y, mouseX, mouseY) < 10) hit = true;
     }
-    stroke(3 + time, 8, 110 - (time * 3) / 7);
-    rect(0, 0, (width * time) / (60 * 5), 12);
+    showTimebar(time);
   } else {
     background(255, 0, 0);
-    if (timeFinal == -1) {
-      timeFinal = time;
-      stroke(3, 8, 110);
-      rect(0, 0, (width * timeFinal) / (60 * 5), 12);
-    }
-    stroke(3, 8, 110);
-    rect(0, 0, (width * timeFinal) / (60 * 5), 12);
+    if (timeFinal == -1) timeFinal = time;
+
+    showTimebar(timeFinal);
   }
   push();
   strokeWeight(1);
   line(0, 20, width, 20);
   pop();
   if (time > 60 * 5) {
-    var c = balls.length + 5;
+    let c = balls.length + 5;
     balls = [];
     while (c > 0) {
       ball = new Ball();
@@ -83,7 +83,7 @@ function draw() {
         first = false;
       }
       text = createDiv(n);
-      for (var i = 0; i < written.length; i++) {
+      for (let i = 0; i < written.length; i++) {
         written[i].remove();
       }
       written = [];
@@ -101,17 +101,25 @@ function draw() {
   }
 }
 
+function showTimebar(time) {
+  let r = 3 + time;
+  let g = 8;
+  let b = 110 - (time * 3) / 7;
+  stroke(r, g, b);
+  fill(r, g, b);
+  rect(0, 0, (width * time) / (60 * 5), 15);
+}
 
-function ResetGame() {
+function resetGame() {
   balls = [];
-  var c = 5;
+  let c = 5;
   while (c > 0) {
     ball = new Ball();
     balls.push(ball);
     c--;
   }
   hit = false;
-  for (var i = 0; i < written.length; i++) {
+  for (let i = 0; i < written.length; i++) {
     written[i].remove();
   }
   written = [];
@@ -119,7 +127,6 @@ function ResetGame() {
   time = 0;
   timeFinal = -1;
 }
-
 
 class Ball {
   constructor() {
@@ -129,19 +136,19 @@ class Ball {
       this.pos.y = random(650);
     }
     this.v = createVector();
-    this.acc = createVector();
   }
-
 
   addForce(force) {
     this.v.add(force);
-
-  };
+  }
 
   update() {
     this.pos.add(this.v);
-    this.v.add(this.acc);
     this.v.mult(0.99);
+    this.hitBorders();
+  }
+
+  hitBorders() {
     if (this.pos.y > height - 1) {
       this.v.y = -this.v.y;
       this.pos.y = height - 1;
@@ -158,11 +165,38 @@ class Ball {
       this.v.x = -this.v.x;
       this.pos.x = width - 1;
     }
-  };
+  }
 
-  show() {
+  show(force) {
+    this.drawSmoke(force);
+    this.drawMainBall();
+  }
+
+  drawMainBall() {
     stroke(255);
-    strokeWeight(18);
-    point(this.pos.x, this.pos.y);
-  };
+    // strokeWeight(18);
+    //triangle function didnt work with cos and sin so made triangle by hand
+    push();
+    translate(this.pos.x, this.pos.y);
+    scale(0.4);
+    let v = createVector(this.v.x, this.v.y)
+    console.log(v);
+    let level = createVector(0, 1)
+    rotate(p5.Vector.angleBetween(v, level));
+    fill(255, 255, 255);
+    triangle(-10, 7, 10, 7, 0, -18);
+    pop();
+    //hitbox
+    if (debug) {
+      stroke(255, 0, 0);
+      strokeWeight(18);
+      point(this.pos.x, this.pos.y);
+    }
+  }
+
+  drawSmoke(force) {
+    stroke(255, 0, 0);
+    strokeWeight(10);
+    point(this.pos.x - force.x * 10, this.pos.y - force.y * 10);
+  }
 }
