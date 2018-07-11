@@ -62,8 +62,11 @@ function draw() {
   line(0, 20, width, 20);
   pop();
   if (time > 60 * 5) {
-    let c = balls.length + 5;
+
+
+    let c = balls.length * 2; //adiciona bolas
     balls = [];
+    console.log(c);
     while (c > 0) {
       ball = new Ball();
       balls.push(ball);
@@ -112,7 +115,7 @@ function showTimebar(time) {
 
 function resetGame() {
   balls = [];
-  let c = 5;
+  let c = 1;
   while (c > 0) {
     ball = new Ball();
     balls.push(ball);
@@ -168,6 +171,7 @@ class Ball {
   }
 
   show(force) {
+
     this.drawSmoke(force);
     this.drawMainBall();
   }
@@ -179,10 +183,9 @@ class Ball {
     push();
     translate(this.pos.x, this.pos.y);
     scale(0.4);
-    let v = createVector(this.v.x, this.v.y)
-    console.log(v);
-    let level = createVector(0, 1)
-    rotate(p5.Vector.angleBetween(v, level));
+    let angle = Math.atan2(this.v.x, -this.v.y);
+
+    rotate(angle);
     fill(255, 255, 255);
     triangle(-10, 7, 10, 7, 0, -18);
     pop();
